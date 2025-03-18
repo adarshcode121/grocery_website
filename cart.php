@@ -13,9 +13,11 @@ if (isset($_POST['update_quantity']) && isset($_POST['cart_id'])) {
     $action = $_POST['update_quantity'];
 
     // Fetch the current quantity and price details
-    $query = mysqli_query($conn, "SELECT quantity FROM cart WHERE id = $cart_id");
+    $query = mysqli_query($conn, "SELECT quantity, price, old_price FROM cart WHERE id = $cart_id");
     $row = mysqli_fetch_assoc($query);
     $current_quantity = (int) $row['quantity'];
+    $price_per_unit = (float) $row['price'];
+    $old_price_per_unit = (float) $row['old_price'];
 
     // Update quantity based on action
     if ($action === 'increase') {
@@ -24,11 +26,21 @@ if (isset($_POST['update_quantity']) && isset($_POST['cart_id'])) {
         $new_quantity = max(0, $current_quantity - 1);
     }
 
+    // Calculate new total values
+    $new_total_price = $price_per_unit * $new_quantity;
+    $new_total_old_price = $old_price_per_unit * $new_quantity;
+
     // If quantity becomes zero, remove item from cart
     if ($new_quantity == 0) {
         mysqli_query($conn, "DELETE FROM cart WHERE id = $cart_id");
     } else {
-        mysqli_query($conn, "UPDATE cart SET quantity = $new_quantity WHERE id = $cart_id");
+        // Update quantity, price, old_price, and total_price
+        mysqli_query($conn, "UPDATE cart SET 
+            quantity = $new_quantity, 
+            price = $price_per_unit, 
+            old_price = $old_price_per_unit, 
+            total_price = $new_total_price 
+            WHERE id = $cart_id");
     }
 
     header("Location: cart.php");
